@@ -1,0 +1,31 @@
+[project]
+name = "in-app-navigational-agent"
+version = "0.1.0"
+description = "In-App Navigational AI Agent — guides users through an HR SaaS admin panel using LangGraph and Neo4j"
+requires-python = ">=3.11"
+dependencies = [
+    "langgraph>=0.4",
+    "langchain-ollama>=0.3",
+    "langchain-core>=0.3",
+    "langchain-openai>=0.1",
+    "neo4j>=5.0",
+    "requests>=2.31",
+    "rapidfuzz>=3.0",
+    "fastapi>=0.115",
+    "uvicorn>=0.34",
+    "python-dotenv>=1.0",
+    "pydantic-settings>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-timeout>=2.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[tool.setuptools.packages.find]
+where = ["src"]
