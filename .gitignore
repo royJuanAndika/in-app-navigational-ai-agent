@@ -1,21 +1,5 @@
 __pycache__
-embed/full_json/embeddings_full.json
-embed/neo4j_insert/embeddings_neo4j.jsonl
-data_preprocessing_and_cleaning/insert_neo4j/full_json/embeddings_full.json
-data_preprocessing_and_cleaning/insert_neo4j/neo4j-query/embeddings_neo4j.jsonl
-data_preprocessing_and_cleaning/embed/data/nkg_gpu3_fix_orphans_with text.zip
-data_preprocessing_and_cleaning/embed/data/neo4j-query/embeddings_neo4j.jsonl
-data_preprocessing_and_cleaning/extract_element_text/prompt_customer_cart.nkg.json.txt
-data_preprocessing_and_cleaning/extract_element_text/prompt_customer_attendance_leave.nkg.json.txt
-data_preprocessing_and_cleaning/extract_element_text/prompt_customer_employee_app.nkg.json.txt
-data_preprocessing_and_cleaning/extract_element_text/prompt_customer_employee.nkg.json.txt
-data_preprocessing_and_cleaning/extract_element_text/prompt_customer_office.nkg.json.txt
-data_preprocessing_and_cleaning/extract_element_text/prompt_customer_setting_profile.nkg.json.txt
-data_preprocessing_and_cleaning/insert_neo4j/neo4j-query/embeddings_neo4j_with_text.jsonl
-data_preprocessing_and_cleaning/scrape_faq/scrape_faq/log.txt
-data_preprocessing_and_cleaning/data
-data_preprocessing_and_cleaning/embed/data
-llm_based_agent/faq_pipeline/output/final_intents.json
-llm_based_agent/faq_pipeline/output/manual
 .env
 /src/.env
+llm_based_agent/.pytest_cache
+.conda
