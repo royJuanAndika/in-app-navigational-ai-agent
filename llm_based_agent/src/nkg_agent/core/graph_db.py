@@ -11,7 +11,6 @@ from typing import Any, Optional, Union
 
 from neo4j import GraphDatabase
 from neo4j.exceptions import ServiceUnavailable, SessionExpired
-from rapidfuzz import fuzz
 
 from .config import get_settings
 
@@ -329,58 +328,17 @@ def get_incoming_triggers(nkg_id: str) -> list[dict]:
 
 
 def find_pages(search_term: str) -> list[dict]:
-    """Fuzzy search pages by id, title, or description using Levenshtein distance."""
-    settings = get_settings()
-    
-    # Strategy 1: try Neo4j CONTAINS first for a fast broad match
+    """Fuzzy search pages by title or URL path (case-insensitive CONTAINS)."""
     query = """
     MATCH (p:Page)
     WHERE toLower(p.title) CONTAINS toLower($term)
        OR toLower(p.id) CONTAINS toLower($term)
-       OR toLower(p.desc) CONTAINS toLower($term)
     OPTIONAL MATCH (p)-[:CONTAINS]->(e:Element)
     RETURN p.id AS page_id, p.title AS title, p.desc AS description,
            count(e) AS element_count
+    ORDER BY count(e) DESC
     """
-    candidates = _run_read(query, term=search_term)
-    
-    # Strategy 2: if CONTAINS returned nothing, get all pages and fuzzy match
-    if not candidates:
-        query_all = """
-        MATCH (p:Page)
-        OPTIONAL MATCH (p)-[:CONTAINS]->(e:Element)
-        RETURN p.id AS page_id, p.title AS title, p.desc AS description,
-               count(e) AS element_count
-        """
-        candidates = _run_read(query_all)
-    
-    if not candidates:
-        return []
-    
-    # Score each candidate with fuzzy matching on id, title, and description
-    scored: list[tuple[int, dict]] = []
-    search_lower = search_term.lower()
-    
-    for page in candidates:
-        page_id = page.get("page_id", "")
-        title = page.get("title", "")
-        desc = page.get("description", "")
-        
-        # Score against each field and take the best score
-        score_id = fuzz.token_sort_ratio(search_lower, page_id.lower()) if page_id else 0
-        score_title = fuzz.token_sort_ratio(search_lower, title.lower()) if title else 0
-        score_desc = fuzz.token_sort_ratio(search_lower, desc.lower()) if desc else 0
-        
-        best_score = max(score_id, score_title, score_desc)
-        
-        if best_score >= settings.fuzzy_match_threshold:
-            scored.append((best_score, page))
-    
-    # Sort by score descending
-    scored.sort(key=lambda x: x[0], reverse=True)
-    
-    # Return results with scores
-    return [{"score": score, **page} for score, page in scored]
+    return _run_read(query, term=search_term)
 
 
 def text_search_elements(
