@@ -213,9 +213,10 @@ async def chatbot_message(req: ChatRequest):
 @app.post("/api/chatbot/stream")
 async def chatbot_stream(req: ChatRequest):
     """SSE streaming endpoint for real-time thinking/tool events."""
-    if not req.message.strip():
+    if not req.message.strip():     
         raise HTTPException(status_code=422, detail="Message cannot be empty.")
-
+    
+    print(req)
     current_page = req.current_page
     if current_page:
         current_page = current_page.split("?")[0].split("#")[0]

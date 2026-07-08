@@ -10,6 +10,7 @@ import json
 import logging
 import re
 import time
+from pathlib import Path
 
 from langchain_core.callbacks import StdOutCallbackHandler
 from langchain_core.callbacks.base import BaseCallbackHandler
@@ -22,6 +23,32 @@ from ..tools import ALL_TOOLS
 from .prompts import SYSTEM_PROMPT, REFORMAT_PROMPT
 
 logger = logging.getLogger(__name__)
+
+LOG_FILE_PATH = Path(__file__).resolve().parents[3] / "agent_responses.log"
+
+
+def log_agent_response(content: str, user_message: str | None = None, is_reformat: bool = False):
+    try:
+        with open(LOG_FILE_PATH, "a", encoding="utf-8") as f:
+            f.write("\n" + "="*60 + "\n")
+            if user_message:
+                f.write(f"REQUEST: {user_message}\n\n")
+                f.write("="*60 + "\n")
+            
+            label = "AGENT FINAL RESPONSE MESSAGE (AFTER REFORMAT):" if is_reformat else "AGENT FINAL RESPONSE MESSAGE:"
+            f.write(f"{label}\n\n")
+            f.write(content + "\n")
+            f.write("="*60 + "\n")
+    except Exception as e:
+        logger.error("Failed to write agent response to log file: %s", e)
+
+
+# Safe print function for Windows/Linux terminal
+def safe_print(text, end="\n", flush=True):
+    try:
+        print(text, end=end, flush=flush)
+    except UnicodeEncodeError:
+        print(text.encode('ascii', 'replace').decode('ascii'), end=end, flush=flush)
 
 # ---------------------------------------------------------------------------
 # Agent factory
@@ -270,22 +297,15 @@ def chat(
 
     t0 = time.time()
     
-    print("\n" + "="*60)
-    print("AGENT THINKING PROCESS STARTED")
-    print("="*60)
+    safe_print("\n" + "="*60)
+    safe_print("AGENT THINKING PROCESS STARTED")
+    safe_print("="*60)
 
     tools_used: list[str] = []
     final_message = None
     all_messages = []
     
-    print("\nAGENT IS THINKING\n\n")
-
-    # Safe print function for Windows terminal
-    def safe_print(text, end="\n", flush=False):
-        try:
-            print(text, end=end, flush=flush)
-        except UnicodeEncodeError:
-            print(text.encode('ascii', 'replace').decode('ascii'), end=end, flush=flush)
+    safe_print("\nAGENT IS THINKING\n\n")
 
     max_retries = 2
     for attempt in range(max_retries + 1):
@@ -347,9 +367,9 @@ def chat(
 
     duration_ms = int((time.time() - t0) * 1000)
     
-    print("\n" + "="*60)
-    print(f"AGENT FINISHED in {duration_ms}ms")
-    print("="*60 + "\n")
+    safe_print("\n" + "="*60)
+    safe_print(f"AGENT FINISHED in {duration_ms}ms")
+    safe_print("="*60 + "\n")
 
     logger.info(
         "Chat completed in %dms — tools used: %s",
@@ -359,6 +379,8 @@ def chat(
 
     # ── 4. Parse structured response and validate ───────────────────
     if final_message and hasattr(final_message, "content") and final_message.content:
+        log_agent_response(final_message.content, user_message)
+
         parsed = parse_agent_response(final_message.content)
         
         # If parsing failed or result is a fallback, try to reprompt once
@@ -378,6 +400,8 @@ def chat(
                 llm = get_llm()
                 final_message = llm.invoke(retry_messages)
                 
+                log_agent_response(final_message.content, is_reformat=True)
+
                 # Re-parse the new message
                 parsed = parse_agent_response(final_message.content)
             except Exception as retry_exc:
@@ -476,6 +500,8 @@ async def achat_stream(
 
         # Final message processing
         if final_message and hasattr(final_message, "content"):
+            log_agent_response(final_message.content, user_message)
+
             parsed = parse_agent_response(final_message.content)
             
             # If parsing failed or result is a fallback, try to reprompt once
@@ -487,6 +513,8 @@ async def achat_stream(
                     llm = get_llm()
                     final_message = await llm.ainvoke([final_message, HumanMessage(content=REFORMAT_PROMPT)])
                     
+                    log_agent_response(final_message.content, is_reformat=True)
+
                     parsed = parse_agent_response(final_message.content)
                 except Exception as retry_exc:
                     logger.error("Async reprompt failed: %s", retry_exc)
